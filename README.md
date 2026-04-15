@@ -137,6 +137,30 @@ Undo uses filesystem snapshots, not git, so it works the same way in any directo
 
 ---
 
+## Why not just use CLAUDE.md?
+
+Fair question, and the obvious one. You could drop something like "after every edit, summarize what you did and ask for approve or undo" into your CLAUDE.md, and Claude would try to follow it. It works, sometimes. Here's why the plugin exists anyway.
+
+**CLAUDE.md gets read. Hooks get executed.**
+
+CLAUDE.md is context Claude reads, weighed against your actual prompt. If your prompt is long or urgent, Claude can deprioritize the review instruction and just stop. There's no enforcement. The Stop hook here literally prevents Claude from ending the turn until the review is out. Deterministic, not probabilistic.
+
+**Undo needs snapshots, not memory.**
+
+To undo a set of edits you need the pre-edit contents of each file. A CLAUDE.md approach asks Claude to remember those contents and rewrite the files back. That breaks down a lot. Claude's context gets compacted mid-session and the old contents disappear. Claude does a Write without Reading first, so there's nothing to remember. Claude's rewrite of the "original" introduces its own bugs. This plugin snapshots each file to disk before the edit happens, so undo is a deterministic file restore, not another AI rewrite.
+
+**Compaction is the silent killer.**
+
+Long sessions trigger context compaction. Your pre-edit state, the early part of the conversation, the file contents Claude read two hours ago, all of it gets summarized into something shorter. If your "remember and revert" policy lives in Claude's head, it doesn't survive compaction. The plugin's edit log and snapshots live on disk, so they're immune.
+
+**The line is harness vs memory.**
+
+The Claude Code harness runs hooks for you. They fire on tool events and can't be talked out of firing. CLAUDE.md is just context Claude reads. Anytime you want a behavior to happen reliably, at a specific event, regardless of what Claude feels like doing that turn, you need a hook. That's this plugin's whole pitch.
+
+If you're a solo dev on low-stakes code with short sessions, CLAUDE.md alone is probably fine. For anything where the review needs to actually happen every time and undo needs to actually work, the hooks are doing real work that instructions can't.
+
+---
+
 ## State and storage
 
 Each Claude Code session gets its own state directory, rooted at the project where you ran Claude.
