@@ -1,0 +1,8 @@
+{
+  "name": "claude-human-review",
+  "version": "0.1.0",
+  "description": "Force a human review gate after every Claude turn that edits files. Summarizes what changed and why, then waits for the developer to Approve or Undo.",
+  "author": {
+    "name": "Irteza"
+  }
+}
