@@ -1,0 +1,18 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "claude-human-review",
+  "description": "Single-plugin marketplace for claude-human-review: a human approval gate after every Claude Code turn that edits files.",
+  "owner": {
+    "name": "Irteza",
+    "url": "https://github.com/IrtezaAsadRizvi"
+  },
+  "plugins": [
+    {
+      "name": "claude-human-review",
+      "description": "Pause Claude at end-of-turn, drop one-line doc comments on touched symbols, write a short review, then Approve or Undo.",
+      "category": "development",
+      "source": "./",
+      "homepage": "https://github.com/IrtezaAsadRizvi/claude-human-review"
+    }
+  ]
+}
