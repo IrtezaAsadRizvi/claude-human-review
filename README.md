@@ -13,6 +13,38 @@ A plugin that helps you actually understand the code Claude Code writes for you.
 
 ---
 
+## Features
+
+- **Stop-hook gate**: blocks Claude from ending any turn that edited files until a review is shown.
+- **Plain-English review**: 60 to 120 words covering what changed, why, and any hidden risks.
+- **Inline doc comments**: drops one-line JSDoc, docstrings, `//`, etc. on new or changed classes and functions, and skips trivial helpers and tests.
+- **Approve / Undo prompt**: reply `1` or `2`. Approve keeps the change, Undo reverts every file this turn.
+- **Snapshot-based undo**: restores from on-disk snapshots, works in any directory (git or not), survives context compaction.
+- **New-file cleanup**: Undo deletes files Claude created, not just reverts them.
+- **Risk flagging**: auth, SQL, crypto, migrations, new deps, and unsnapshotted files get called out in a "Worth a second look" section.
+- **Read-only turns skip**: Read, Bash, Grep, and Glob-only turns never interrupt you.
+- **Kill switch**: `HUMAN_REVIEW_DISABLED=1 claude` turns the gate off without uninstalling.
+
+---
+
+## Contents
+
+- [Install](#install)
+- [Why this exists](#why-this-exists)
+- [Heads up: token usage](#heads-up-token-usage)
+- [What you'll see](#what-youll-see)
+- [How to use it](#how-to-use-it)
+- [How it works under the hood](#how-it-works-under-the-hood)
+- [Why not just use CLAUDE.md?](#why-not-just-use-claudemd)
+- [State and storage](#state-and-storage)
+- [Repository layout](#repository-layout)
+- [Behavior details and edge cases](#behavior-details-and-edge-cases)
+- [Limitations](#limitations)
+- [Contributing](#contributing)
+- [License](#license)
+
+---
+
 ## Install
 
 ### Option A: install from GitHub (recommended)
