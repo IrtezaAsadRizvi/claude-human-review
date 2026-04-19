@@ -15,19 +15,43 @@ A plugin that helps you actually understand the code Claude Code writes for you.
 
 ## Install
 
-### Option A: local symlink (recommended while developing)
+### Option A: install from GitHub (recommended)
+
+Two slash-commands inside Claude Code:
+
+```
+/plugin marketplace add IrtezaAsadRizvi/claude-human-review
+/plugin install claude-human-review@claude-human-review
+```
+
+The first command registers this repo as a plugin marketplace. The second installs the plugin. Restart Claude Code once after installing so the hooks register, then the review gate fires on the next turn that edits files.
+
+To pull updates later:
+
+```
+/plugin marketplace update claude-human-review
+```
+
+### Option B: install from a local clone (for development)
+
+If you want to hack on the plugin yourself, clone the repo and point Claude Code at your local copy:
 
 ```bash
 git clone https://github.com/IrtezaAsadRizvi/claude-human-review.git
-mkdir -p ~/.claude/plugins/local
-ln -s "$(pwd)/claude-human-review" ~/.claude/plugins/local/claude-human-review
 ```
 
-Enable the plugin in your Claude Code settings and restart Claude Code. The hooks take effect on your next prompt.
+Then inside Claude Code:
 
-### Option B: Claude Code official plugin marketplace
+```
+/plugin marketplace add /absolute/path/to/claude-human-review
+/plugin install claude-human-review@claude-human-review
+```
 
-Submitted to Anthropic's community marketplace. Pending approval. Once live, installation is two slash-commands inside Claude Code:
+Edits to `skills/human-review/SKILL.md` and the hook scripts take effect on the next Claude Code restart.
+
+### Option C: Claude Code official plugin marketplace
+
+Submitted to Anthropic's community marketplace. Pending approval. Once live:
 
 ```
 /plugin marketplace add claude-plugins-official
