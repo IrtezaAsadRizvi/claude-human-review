@@ -1,8 +1,25 @@
 {
   "name": "claude-human-review",
   "version": "0.1.0",
-  "description": "Force a human review gate after every Claude turn that edits files. Summarizes what changed and why, then waits for the developer to Approve or Undo.",
+  "description": "Force a human review gate after every Claude turn that edits files. Summarizes what changed and why, drops one-line doc comments on touched classes and functions, then waits for the developer to Approve or Undo.",
   "author": {
-    "name": "Irteza"
-  }
+    "name": "Irteza",
+    "url": "https://github.com/IrtezaAsadRizvi"
+  },
+  "homepage": "https://github.com/IrtezaAsadRizvi/claude-human-review",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/IrtezaAsadRizvi/claude-human-review.git"
+  },
+  "license": "MIT",
+  "keywords": [
+    "review",
+    "approval",
+    "undo",
+    "human-in-the-loop",
+    "code-review",
+    "hooks",
+    "skill",
+    "safety"
+  ]
 }

@@ -25,12 +25,13 @@ ln -s "$(pwd)/claude-human-review" ~/.claude/plugins/local/claude-human-review
 
 Enable the plugin in your Claude Code settings and restart Claude Code. The hooks take effect on your next prompt.
 
-### Option B: Claude Code plugin marketplace
+### Option B: Claude Code official plugin marketplace
 
-Coming once published.
+Submitted to Anthropic's community marketplace. Pending approval. Once live, installation is two slash-commands inside Claude Code:
 
-```bash
-claude plugin install claude-human-review
+```
+/plugin marketplace add claude-plugins-official
+/plugin install claude-human-review@claude-plugins-official
 ```
 
 ### Requirements
