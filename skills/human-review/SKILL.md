@@ -5,84 +5,112 @@ description: Produce a plain-English review of the files you just edited and gat
 
 # Human Review
 
-You are the last line of defense between Claude-generated code and a codebase the human will have to own and debug. Your job is to translate what Claude did into plain English so the developer — who may not have been watching — can make an informed Approve / Undo decision.
+Translate what you just did into plain English so the developer can Approve or Undo. Be brief. Every extra sentence costs tokens.
 
 ## When to run
 
-Run this skill in exactly two situations:
+Exactly two situations:
 
 1. **Review trigger.** The Stop hook injected a prompt telling you to invoke `human-review`. The prompt includes a path to `edit_log.jsonl` and a `session_id`. You must produce a review before stopping.
-2. **Reply handling.** On the very next user turn after you produced a review, the developer's message is `1`, `2`, `approve`, `undo`, `yes`, or `no`. You must run the appropriate helper script. Do not do anything else that turn — no extra edits, no follow-up suggestions — until the developer sends a fresh prompt.
+2. **Reply handling.** On the very next user turn after a review, the developer's message is `1`, `2`, `approve`, `undo`, `yes`, or `no`. Run the matching script and nothing else.
 
-If neither condition applies, don't invoke this skill.
+Otherwise, don't invoke this skill.
 
-## Writing the review
+## Step 1: Document what you changed
 
-Read `edit_log.jsonl` to get the list of files that were touched this turn. For each file, recall from your own turn history *what* you changed and *why*. Then produce a review with this exact structure:
+Before writing the review, add brief doc comments to new or materially-changed **classes, functions, methods, exported symbols, and non-obvious config blocks** in the files listed in `edit_log.jsonl`. The goal is a glanceable note, not prose.
+
+### Comment style by language
+
+| Language                         | Style                                 |
+| -------------------------------- | ------------------------------------- |
+| TypeScript / JavaScript          | JSDoc `/** ... */` above the symbol   |
+| Python                           | Triple-quoted docstring inside def/class |
+| Go                               | `// FuncName ...` line above          |
+| Rust                             | `/// ...` lines above                 |
+| Java / Kotlin / PHP / C#         | JavaDoc-style `/** ... */`            |
+| Ruby                             | `#` lines above                       |
+| Shell / YAML / TOML / Dockerfile | `#` line above the block              |
+
+### Rules
+
+- **Keep it to 1 line** (max 2 if a non-obvious param/return matters). One short sentence on *what this is for*, not how it works.
+- **Only touch symbols you added or meaningfully changed** this turn. Don't document the whole file.
+- **Skip trivial helpers**, one-liners, private utility functions, test cases, getters/setters, and obviously-named things. A 3-line `formatDate` doesn't need a JSDoc.
+- **Don't duplicate the signature.** "Adds two numbers" on `add(a, b)` is noise.
+- **Don't overwrite existing comments** unless they're now wrong. If a symbol already has a docstring/JSDoc, leave it alone.
+- **Config blocks**: add a comment only when the *purpose* of the block isn't obvious from the keys.
+- **No emojis, no TODOs, no author tags, no dates.**
+
+If a file has nothing worth documenting under these rules, skip it. Don't force comments.
+
+## Step 2: Writing the review
+
+Read `edit_log.jsonl` for the file list. Produce exactly this structure:
 
 ```markdown
 ## Review: what I just did
 
 **What changed**
-- `path/to/file1.py` — <one plain-English sentence about the edit>
-- `path/to/file2.ts` — <one plain-English sentence about the edit>
+- `path/to/file1.py`: <≤12 words on the edit>
+- `path/to/file2.ts`: <≤12 words on the edit>
 
 **Why**
-<1–3 sentences explaining the intent behind these changes, tied back to the developer's prompt. Call out any domain assumptions you made — especially assumptions a non-expert might not spot.>
+<1 sentence. Only add a second if a non-obvious assumption needs flagging.>
 
 **Worth a second look**
-- <anything risk-adjacent: new deps, config/secrets changes, deletions, auth/permissions/crypto code, SQL, shell exec, network calls, schema migrations, files that couldn't be snapshotted>
-- <omit this section entirely if there's nothing noteworthy — don't pad>
+- <one line per real risk: new dep, secret/config, deletion, auth/crypto, SQL, shell exec, network, migration, unsnapshotted file>
 
 ---
-**1. Approve** — accept these changes.
-**2. Undo** — revert all files this turn.
+**1. Approve**: accept these changes.
+**2. Undo**: revert all files this turn.
 ```
 
-### Writing rules
+### Hard rules
 
-- **Explain the why, not the what.** The developer can read the diff. What they can't read is your reasoning, the tradeoffs you considered, and the domain assumptions baked in. Lead with that.
-- **One line per file.** If a file has multiple changes, summarize the *goal*, not each chunk. "Refactored auth middleware to extract the JWT validation helper" beats "Moved lines 40–55 to a new function and updated the import at line 3."
-- **Flag invisible risks.** A rename in a dynamically-loaded module, a new dependency, a loosened permission check, a silently caught exception — these belong in "Worth a second look" even if they look trivial in the diff.
-- **Don't re-list the obvious.** If the developer asked "add a print statement to foo.py", the Why section doesn't need to justify the print statement. The review exists to surface what isn't obvious from the prompt.
-- **Keep it scannable.** 150–400 words total is the sweet spot for most turns. Longer is only justified when you did something substantive.
-- **Never skip the closing block.** The `1. Approve / 2. Undo` lines must appear verbatim at the end, or the developer loses the call-to-action.
+- **Target 60–120 words total.** Hard cap 200. If you're over, cut.
+- **One short line per file.** Summarize the goal, not each chunk.
+- **Skip "Worth a second look" entirely if nothing is risky.** Don't pad. No "N/A", no "nothing to flag".
+- **Skip "Why" if the prompt was literal** (e.g. "add a print statement", "rename X to Y"). Omit the whole section.
+- **No preamble, no recap of the prompt, no closing commentary.** The template above is the whole message.
+- **Never drop the 1/2 closing block.** It must appear verbatim.
+- **Flag invisible risks only.** Things the diff won't show: dynamic imports, loosened checks, swallowed exceptions, new deps, binary/unsnapshotted files.
 
-### Example review
+### Example (terse)
 
 ```markdown
 ## Review: what I just did
 
 **What changed**
-- `src/auth/session.py` — switched the session cookie from SameSite=Lax to SameSite=Strict and added the Secure flag.
-- `tests/test_auth.py` — added two test cases covering the new cookie flags; updated the fixture to expect `secure=True`.
+- `src/auth/session.py`: session cookie SameSite=Lax → Strict, added Secure flag.
+- `tests/test_auth.py`: two cases for the new flags; fixture expects `secure=True`.
 
 **Why**
-You asked to "tighten up cookie handling." I interpreted that as defense-in-depth against CSRF and mixed-content leakage. SameSite=Strict blocks cookies on cross-site requests entirely, which is stricter than your current Lax but will break any cross-site embeds — I assumed you don't have those. The Secure flag requires HTTPS, which is fine in prod but means local HTTP dev sessions won't persist cookies.
+Read "tighten cookie handling" as CSRF hardening. Strict will break cross-site embeds; I assumed you have none.
 
 **Worth a second look**
-- SameSite=Strict **will break** any OAuth redirect flows that land back on your domain — confirm you don't rely on that pattern before approving.
-- Local dev over plain HTTP will silently drop the session cookie now. If your dev loop uses `localhost`, most browsers treat it as secure-context anyway, but double-check your setup.
+- Strict breaks OAuth redirects landing on your domain.
+- Secure drops cookies on plain-HTTP localhost dev.
 
 ---
-**1. Approve** — accept these changes.
-**2. Undo** — revert all files this turn.
+**1. Approve**: accept these changes.
+**2. Undo**: revert all files this turn.
 ```
 
 ## Handling the developer's reply
 
-On the turn *after* you produced a review, the developer replies. Match their message (case-insensitive, trimmed):
+On the turn *after* a review, match the message (case-insensitive, trimmed):
 
-| They reply          | You do                                                                                             |
-| ------------------- | -------------------------------------------------------------------------------------------------- |
-| `1`, `approve`, `yes` | Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/approve.sh <session_id>`. Then reply with a one-line confirm, like: "Approved. Changes kept." |
-| `2`, `undo`, `no`     | Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/undo.sh <session_id>`. Then paste the script's output so the developer can see which files were reverted/deleted and any warnings. |
-| Anything else       | Treat it as a new prompt. The snapshot.py hook will auto-clear the prior review state on the next edit (implicit approval). Don't run either script. |
+| Reply                 | Do                                                                                                                 |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `1`, `approve`, `yes` | Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/approve.sh <session_id>`. Reply once: "Approved."                          |
+| `2`, `undo`, `no`     | Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/undo.sh <session_id>`. Paste the script output. Surface any warnings.      |
+| Anything else         | Treat as a new prompt. Don't run either script. The next edit auto-clears prior review state (implicit approve).   |
 
-The `<session_id>` was included in the Stop hook prompt that triggered the review; use that exact value. `${CLAUDE_PLUGIN_ROOT}` is set by Claude Code and points at the plugin root.
+Use the exact `<session_id>` from the Stop hook prompt. `${CLAUDE_PLUGIN_ROOT}` is set by Claude Code.
 
 ### After approve or undo
 
-- Do not produce another review for this turn. The state is cleared.
-- Do not proactively make new edits. Wait for the developer's next prompt.
-- If the `undo.sh` output mentions warnings (e.g., a binary file that couldn't be snapshotted), surface those warnings clearly — the developer needs to know some changes couldn't be reverted.
+- No second review this turn. State is cleared.
+- No proactive edits. Wait for the next prompt.
+- If `undo.sh` warns about unsnapshotted files, surface the warning plainly.

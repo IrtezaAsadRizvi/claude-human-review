@@ -7,63 +7,9 @@
 [![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-lightgrey)](#requirements)
 [![GitHub stars](https://img.shields.io/github/stars/IrtezaAsadRizvi/claude-human-review?style=social)](https://github.com/IrtezaAsadRizvi/claude-human-review/stargazers)
 
-A plugin that helps you actually understand the code Claude Code writes for you. After every turn that edits files, Claude pauses and explains what it changed and why in plain English. You either approve the changes or undo them.
+A plugin that helps you actually understand the code Claude Code writes for you. After every turn that edits files, Claude pauses, drops short doc comments on the classes and functions it touched (JSDoc for TS/JS, docstrings for Python, and so on), then explains what changed and why in plain English. You either approve the changes or undo them. The review itself is tuned to stay short so the token cost is minimal.
 
 **Keywords:** claude code review, claude code approval, approve claude changes, undo claude changes, AI code review, human-in-the-loop, claude code plugin, claude code hooks.
-
----
-
-## Why this exists
-
-Claude Code writes code fast. Faster than you can read it. If you work that way for a few weeks, you end up sitting on a codebase you kind of wrote, kind of didn't, and don't fully understand. That's painful when something breaks, when a teammate asks why a piece of code is shaped the way it is, when an auditor wants a walkthrough, or when you come back six months later to extend it.
-
-The goal of this project is simple: make the human developer more educated about the code going into their project.
-
-Every review is a short lesson. Here's what changed. Here's why. Here's what to watch out for. You read it, you decide, you move on. Over time that adds up, and you end up fluent in your own codebase instead of a passenger in it.
-
-Approve keeps the change. Undo throws it out. Either way, you saw it.
-
----
-
-## Heads up: token usage
-
-This plugin makes Claude write more. Every turn that edits files ends with a plain-English review, which costs extra output tokens. If you're on a token budget or paying per-token via the API, expect a small bump in usage.
-
-That's the tradeoff, and honestly it's worth it. You pay a bit more in output tokens for a short summary, and in exchange you actually understand what Claude just did to your code. For serious AI-human collaboration, that's vital. Silent edits are cheap in the moment, but the cost shows up later in bugs you can't explain and code you didn't read.
-
-If you want to claw tokens back elsewhere, take a look at [caveman](https://github.com/juliusbrussee/caveman). It compresses prompts so you spend less on input tokens, which pairs well with a plugin that spends more on output tokens for review clarity.
-
----
-
-## What you'll see
-
-When Claude finishes a turn that edited files, your terminal shows something like this:
-
-```markdown
-## Review: what I just did
-
-**What changed**
-- `src/auth/session.py`: switched the session cookie from SameSite=Lax
-  to SameSite=Strict and added the Secure flag.
-- `tests/test_auth.py`: added two test cases covering the new cookie flags.
-
-**Why**
-You asked to "tighten up cookie handling." I read that as defense-in-depth
-against CSRF. SameSite=Strict is stricter than your current Lax, so it'll
-break any cross-site embeds. I assumed you don't have those. The Secure
-flag requires HTTPS, which means local HTTP dev sessions won't persist
-cookies.
-
-**Worth a second look**
-- SameSite=Strict will break OAuth redirect flows. Confirm you don't
-  rely on that pattern.
-- Local HTTP dev will silently drop cookies now.
-
-1. Approve: accept these changes.
-2. Undo: revert all files this turn.
-```
-
-You reply `1` to keep it or `2` to roll it back.
 
 ---
 
@@ -92,6 +38,63 @@ claude plugin install claude-human-review
 * Claude Code (any version with plugin and hook support).
 * Python 3.9 or newer on PATH. The hooks are pure Python, no third-party dependencies.
 * Bash for the approve and undo helper scripts.
+
+---
+
+## Why this exists
+
+Claude Code writes code fast. Faster than you can read it. If you work that way for a few weeks, you end up sitting on a codebase you kind of wrote, kind of didn't, and don't fully understand. That's painful when something breaks, when a teammate asks why a piece of code is shaped the way it is, when an auditor wants a walkthrough, or when you come back six months later to extend it.
+
+The goal of this project is simple: make the human developer more educated about the code going into their project.
+
+Every review is a short lesson. Here's what changed. Here's why. Here's what to watch out for. You read it, you decide, you move on. Over time that adds up, and you end up fluent in your own codebase instead of a passenger in it.
+
+Approve keeps the change. Undo throws it out. Either way, you saw it.
+
+---
+
+## Heads up: token usage
+
+The plugin is tuned to stay cheap. The skill targets 60–120 words per review and drops sections when they'd be filler, so the output overhead per turn is small. Inline doc comments follow the same rule: one short line per symbol, only on classes, functions, exported symbols, and non-obvious config blocks, and only where the purpose isn't already obvious from the name. No JSDoc spam, no docstrings for three-line helpers.
+
+You're paying a handful of extra tokens to actually understand what Claude just did to your code, and to get a real Undo button if you don't like it. For serious AI-human collaboration, that's cheap.
+
+If you want to claw tokens back on the input side, [caveman](https://github.com/juliusbrussee/caveman) compresses prompts. Pairs well with a plugin that already keeps output lean.
+
+---
+
+## What you'll see
+
+When Claude finishes a turn that edited files, your terminal shows something like this:
+
+```markdown
+## Review: what I just did
+
+**What changed**
+- `src/auth/session.py`: session cookie SameSite=Lax → Strict, added Secure flag.
+- `tests/test_auth.py`: two cases for the new flags; fixture expects `secure=True`.
+
+**Why**
+Read "tighten cookie handling" as CSRF hardening. Strict will break cross-site embeds; I assumed you have none.
+
+**Worth a second look**
+- Strict breaks OAuth redirects landing on your domain.
+- Secure drops cookies on plain-HTTP localhost dev.
+
+1. Approve: accept these changes.
+2. Undo: revert all files this turn.
+```
+
+Reply `1` to keep it or `2` to roll it back.
+
+Alongside the review, Claude adds a one-line doc comment above any class, function, or config block it created or materially changed. JSDoc in TS/JS, docstrings in Python, `//` in Go, and so on. Example, in a file Claude just touched:
+
+```ts
+/** Validates a JWT and returns the decoded claims, or null if it's expired or signed with the wrong key. */
+export function verifySession(token: string): Claims | null { ... }
+```
+
+Trivial helpers, tests, and anything already documented are left alone, so the diff stays small.
 
 ---
 
