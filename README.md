@@ -1,5 +1,12 @@
 # claude-human-review
 
+[![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-Plugin-D97757?logo=anthropic&logoColor=white)](https://docs.claude.com/en/docs/claude-code)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue?logo=python&logoColor=white)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](#license)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](#contributing)
+[![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-lightgrey)](#requirements)
+[![GitHub stars](https://img.shields.io/github/stars/IrtezaAsadRizvi/claude-human-review?style=social)](https://github.com/IrtezaAsadRizvi/claude-human-review/stargazers)
+
 A plugin that helps you actually understand the code Claude Code writes for you. After every turn that edits files, Claude pauses and explains what it changed and why in plain English. You either approve the changes or undo them.
 
 **Keywords:** claude code review, claude code approval, approve claude changes, undo claude changes, AI code review, human-in-the-loop, claude code plugin, claude code hooks.
