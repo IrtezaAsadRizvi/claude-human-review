@@ -33,6 +33,7 @@ A plugin that helps you actually understand the code Claude Code writes for you.
 - [Why this exists](#why-this-exists)
 - [Heads up: token usage](#heads-up-token-usage)
 - [What you'll see](#what-youll-see)
+- [How the review differs from a default Claude summary](#how-the-review-differs-from-a-default-claude-summary)
 - [How to use it](#how-to-use-it)
 - [How it works under the hood](#how-it-works-under-the-hood)
 - [Why not just use CLAUDE.md?](#why-not-just-use-claudemd)
@@ -152,6 +153,24 @@ export function verifySession(token: string): Claims | null { ... }
 ```
 
 Trivial helpers, tests, and anything already documented are left alone, so the diff stays small.
+
+---
+
+## How the review differs from a default Claude summary
+
+Claude already recaps its work at the end of a turn if it feels like it. This review is a different artifact, on purpose.
+
+| | Default Claude recap | This plugin's review |
+|---|---|---|
+| Shape | Freeform prose, varies turn to turn | Fixed template: What changed / Why / Worth a second look |
+| Length | Anywhere from one line to a full page | 60 to 120 words, hard cap 200 |
+| Per-file detail | Often re-narrates each chunk | One line per file, goal-level, 12 words max |
+| Risks | Mentioned only if they came up while coding | Dedicated section, targets auth, SQL, crypto, new deps, migrations, unsnapshotted files |
+| Invisible risks | Usually missed | Explicitly called out: dynamic imports, loosened checks, swallowed exceptions |
+| Ending | Turn just ends, you decide what to do | Forced `1. Approve` / `2. Undo` choice |
+| Guaranteed? | No, Claude may skip it | Yes, enforced by the Stop hook |
+
+The goal is a fixed-shape artifact you can scan in under 30 seconds and decide keep-or-revert, not a narrative of what was done.
 
 ---
 
